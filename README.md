@@ -1,38 +1,40 @@
-# template-bash-utility
+# git-clone-remote
 
-Template repository for creating POSIX / Bash shell script utilities deployed via `sstix-tools` for **APT**, **RPM**, and **Nix** with **Zsh autocompletion**.
+`git-clone-remote` copies every local branch and tag from the current repository to a new Git remote. It can also create local tracking branches for remote branches.
 
-## Repository Structure
-```
-├── .github/workflows/
-│   ├── release.yaml             # Automated packaging and release pipeline
-│   └── test.yaml                # CI test workflow
-├── bin/
-│   └── template-bash-utility    # Main executable script
-├── completion/
-│   └── _template-bash-utility   # Zsh completion definition
-├── packaging/
-│   ├── debian/                  # Debian package metadata
-│   └── rpm/                     # RPM spec file
-├── flake.nix                    # Nix package & app definition
-├── flake.lock                   # Nix lockfile
-├── LICENSE
-└── README.md
+## Requirements
+
+- Bash
+- Git
+- Zsh, if you want shell completion
+
+## Usage
+
+Run the command from inside a Git working tree:
+
+```bash
+git-clone-remote <new-git-remote-url>
+git-clone-remote --pull-all
 ```
 
-## How to Use This Template
-1. Create a new repository in GitHub from this template under the `sstix-tools` organization.
-2. Rename the files and occurrences of `template-bash-utility` to your tool name:
-   - `bin/template-bash-utility` -> `bin/<your-tool>`
-   - `completion/_template-bash-utility` -> `completion/_<your-tool>`
-   - `packaging/rpm/template-bash-utility.spec` -> `packaging/rpm/<your-tool>.spec`
-   - In `flake.nix`: update `pname = "<your-tool>"` and description
-   - In `.github/workflows/release.yaml`: update `pkg_name="<your-tool>"`
-   - In `packaging/debian/control`: update `Package:` and `Description:`
-3. Implement your utility logic in `bin/<your-tool>`.
-4. Commit your changes and tag a release:
-   ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
-   ```
-5. GitHub Actions will automatically build Debian (`.deb`), RPM (`.rpm`), and Nix assets and dispatch a trigger to `sstix-tools/registry`.
+To mirror a repository to a new remote:
+
+```bash
+git-clone-remote git@github.com:example/project.git
+```
+
+The command fetches and prunes `origin`, creates local tracking branches for its remote branches, adds the destination as `new-origin`, then pushes all local branches and tags to it. The `new-origin` remote name should not already be configured.
+
+`--pull-all` fetches and prunes all configured remotes, then creates local tracking branches for remote branches that do not already have a local branch. It does not push anything.
+
+## Installation
+
+Version tags (`v*`) trigger the GitHub Actions release workflow, which builds Debian and RPM packages and a source archive. The Nix flake provides a package and `nix run .` for the supported systems. Packages install the Zsh completion file as `_git-clone-remote` in the standard site-functions directory.
+
+## Development
+
+Run the local Git integration checks with:
+
+```bash
+bash tests/test-git-clone-remote.sh
+```
