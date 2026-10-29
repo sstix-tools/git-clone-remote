@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+NAME="template-bash-utility"
+VERSION="0.1.0"
+
+show_help() {
+    cat <<EOF
+Usage: $NAME [OPTIONS] [COMMAND]
+
+A Bash utility script for sstix-tools.
+
+Options:
+  -h, --help       Show this help message and exit
+  -v, --version    Show version information and exit
+
+Commands:
+  status           Show utility status
+  run              Run the main task
+EOF
+}
+
+show_version() {
+    echo "$NAME version $VERSION"
+}
+
+cmd="${1:-status}"
+
+case "$cmd" in
+    -h|--help)
+        show_help
+        exit 0
+        ;;
+    -v|--version)
+        show_version
+        exit 0
+        ;;
+    status)
+        echo "[$NAME] Status: OK"
+        ;;
+    run)
+        echo "[$NAME] Executing task..."
+        ;;
+    *)
+        echo "Error: Unknown command '$cmd'" >&2
+        echo "Run '$NAME --help' for usage." >&2
+        exit 1
+        ;;
+esac

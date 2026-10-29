@@ -1,0 +1,203 @@
+name: Build and release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: version
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev rpm jq
+
+      - name: Create source archive
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          pkg_name="template-bash-utility"
+          mkdir -p build/source
+
+          install -D -m 0755 "bin/$pkg_name" \
+            "build/source/$pkg_name-$VERSION/bin/$pkg_name"
+
+          install -D -m 0644 "completion/_$pkg_name" \
+            "build/source/$pkg_name-$VERSION/completion/_$pkg_name"
+
+          install -D -m 0644 LICENSE \
+            "build/source/$pkg_name-$VERSION/LICENSE"
+
+          tar \
+            --directory build/source \
+            --create \
+            --gzip \
+            --file "build/$pkg_name-$VERSION.tar.gz" \
+            "$pkg_name-$VERSION"
+
+      - name: Calculate source hash
+        id: source_hash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          pkg_name="template-bash-utility"
+          archive="build/$pkg_name-$VERSION.tar.gz"
+
+          digest="$(
+            sha256sum "$archive" |
+            awk '{print $1}' |
+            xxd -r -p |
+            base64 -w 0
+          )"
+
+          printf 'sha256-%s\n' "$digest" \
+            > "build/$pkg_name-$VERSION.tar.gz.sri"
+
+          echo "Generated Nix hash:"
+          cat "build/$pkg_name-$VERSION.tar.gz.sri"
+
+      - name: Build Debian package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          pkg_name="template-bash-utility"
+          root="build/deb/${pkg_name}_${VERSION}_all"
+
+          mkdir -p \
+            "$root/DEBIAN" \
+            "$root/usr/bin" \
+            "$root/usr/share/zsh/site-functions"
+
+          install -m 0755 "bin/$pkg_name" \
+            "$root/usr/bin/$pkg_name"
+
+          install -m 0644 "completion/_$pkg_name" \
+            "$root/usr/share/zsh/site-functions/_$pkg_name"
+
+          cat > "$root/DEBIAN/control" <<EOF
+          Package: $pkg_name
+          Version: $VERSION
+          Section: utils
+          Priority: optional
+          Architecture: all
+          Maintainer: sstix-tools <tools@sstix.invalid>
+          Depends: coreutils
+          Description: Bash script utility template
+           A utility script packaged for sstix-tools.
+          EOF
+
+          dpkg-deb \
+            --build \
+            --root-owner-group \
+            "$root" \
+            "build/${pkg_name}_${VERSION}_all.deb"
+
+      - name: Build RPM package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          pkg_name="template-bash-utility"
+          mkdir -p build/rpm/SOURCES build/rpm/SPECS build/rpm/RPMS
+
+          cp "bin/$pkg_name" "build/rpm/SOURCES/$pkg_name"
+          cp "completion/_$pkg_name" "build/rpm/SOURCES/_$pkg_name"
+
+          sed "s/%{version}/$VERSION/" \
+            "packaging/rpm/$pkg_name.spec" \
+            > "build/rpm/SPECS/$pkg_name.spec"
+
+          rpmbuild \
+            --define "_topdir $PWD/build/rpm" \
+            --define "_sourcedir $PWD/build/rpm/SOURCES" \
+            --define "_rpmdir $PWD/build/rpm/RPMS" \
+            -bb "build/rpm/SPECS/$pkg_name.spec"
+
+          find build/rpm/RPMS -name '*.rpm' -exec cp {} build/ \;
+
+      - name: Create release manifest
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          pkg_name="template-bash-utility"
+          source_asset="$pkg_name-$VERSION.tar.gz"
+          source_hash="$(cat "build/$source_asset.sri")"
+
+          jq -n \
+            --arg name "$pkg_name" \
+            --arg version "$VERSION" \
+            --arg source "$source_asset" \
+            --arg source_hash "$source_hash" \
+            '{
+              name: $name,
+              version: $version,
+              type: "bash-utility",
+              description: "Bash script utility",
+              source_archive: $source,
+              source_hash: $source_hash,
+              apt_packages: [($name + "_" + $version + "_all.deb")],
+              rpm_packages: [($name + "-" + $version + "-1.noarch.rpm")],
+              dependencies: ["coreutils"],
+              executables: [$name],
+              completions: [("_" + $name)],
+              nix_systems: [
+                "aarch64-darwin",
+                "x86_64-darwin",
+                "x86_64-linux",
+                "aarch64-linux"
+              ]
+            }' \
+            > build/manifest.json
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          mapfile -d '' assets < <(
+            find build \
+              -maxdepth 1 \
+              -type f \
+              -print0
+          )
+
+          printf 'Release assets:\n'
+          printf ' - %s\n' "${assets[@]}"
+
+          gh release create "$GITHUB_REF_NAME" \
+            --title "template-bash-utility $VERSION" \
+            --generate-notes \
+            "${assets[@]}"
+
+      - name: Trigger registry update
+        if: always()
+        env:
+          DISPATCH_TOKEN: ${{ secrets.REGISTRY_DISPATCH_TOKEN || secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          echo "Notifying registry of new release..."
+          curl -s -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $DISPATCH_TOKEN" \
+            https://api.github.com/repos/sstix-tools/registry/dispatches \
+            -d '{"event_type": "tool_release", "client_payload": {"repository": "${{ github.repository }}", "tag": "${{ github.ref_name }}"}}' \
+            || true

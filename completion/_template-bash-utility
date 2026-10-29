@@ -1,0 +1,15 @@
+#compdef template-bash-utility
+
+_arguments \
+  '(-h --help)'{-h,--help}'[Show help message]' \
+  '(-v --version)'{-v,--version}'[Show version]' \
+  '1: :->command' \
+  '*::arg:->args'
+
+case "$state" in
+  command)
+    _values 'command' \
+      'status[Show utility status]' \
+      'run[Run the main task]'
+    ;;
+esac

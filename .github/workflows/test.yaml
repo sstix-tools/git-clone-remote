@@ -1,0 +1,22 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Test execution and help flag
+        run: |
+          chmod +x bin/template-bash-utility
+          ./bin/template-bash-utility --help
+          ./bin/template-bash-utility --version
+          ./bin/template-bash-utility status

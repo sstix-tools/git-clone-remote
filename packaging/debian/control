@@ -1,0 +1,12 @@
+Source: template-bash-utility
+Section: utils
+Priority: optional
+Maintainer: sstix-tools <tools@sstix.invalid>
+Standards-Version: 4.6.0
+Rules-Requires-Root: no
+
+Package: template-bash-utility
+Architecture: all
+Depends: coreutils
+Description: Bash script utility template
+ A utility script packaged for sstix-tools.
