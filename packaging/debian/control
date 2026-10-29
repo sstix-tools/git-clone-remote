@@ -1,7 +1,7 @@
 Source: git-clone-remote
 Section: utils
 Priority: optional
-Maintainer: sstix-tools <tools@sstix.invalid>
+Maintainer: sstix-tools <sstix@stix.foo>
 Standards-Version: 4.6.0
 Rules-Requires-Root: no
 

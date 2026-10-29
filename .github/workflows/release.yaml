@@ -99,7 +99,7 @@ jobs:
           Section: utils
           Priority: optional
           Architecture: all
-          Maintainer: sstix-tools <tools@sstix.invalid>
+          Maintainer: sstix-tools <sstix@stix.foo>
           Depends: bash, git, grep
           Description: Copy branches and tags to another Git remote
            A Bash utility for mirroring Git branches and tags to another remote.
