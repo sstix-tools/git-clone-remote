@@ -14,9 +14,11 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Test execution and help flag
+      - name: Check shell syntax
         run: |
-          chmod +x bin/template-bash-utility
-          ./bin/template-bash-utility --help
-          ./bin/template-bash-utility --version
-          ./bin/template-bash-utility status
+          for script in bin/git-clone-remote tests/test-git-clone-remote.sh; do
+            bash -n "$script"
+          done
+
+      - name: Test branch and tag handling
+        run: bash tests/test-git-clone-remote.sh

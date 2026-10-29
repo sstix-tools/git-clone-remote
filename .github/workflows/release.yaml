@@ -35,7 +35,7 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          pkg_name="template-bash-utility"
+          pkg_name="git-clone-remote"
           mkdir -p build/source
 
           install -D -m 0755 "bin/$pkg_name" \
@@ -59,7 +59,7 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          pkg_name="template-bash-utility"
+          pkg_name="git-clone-remote"
           archive="build/$pkg_name-$VERSION.tar.gz"
 
           digest="$(
@@ -79,7 +79,7 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          pkg_name="template-bash-utility"
+          pkg_name="git-clone-remote"
           root="build/deb/${pkg_name}_${VERSION}_all"
 
           mkdir -p \
@@ -100,9 +100,9 @@ jobs:
           Priority: optional
           Architecture: all
           Maintainer: sstix-tools <tools@sstix.invalid>
-          Depends: coreutils
-          Description: Bash script utility template
-           A utility script packaged for sstix-tools.
+          Depends: bash, git, grep
+          Description: Copy branches and tags to another Git remote
+           A Bash utility for mirroring Git branches and tags to another remote.
           EOF
 
           dpkg-deb \
@@ -115,7 +115,7 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          pkg_name="template-bash-utility"
+          pkg_name="git-clone-remote"
           mkdir -p build/rpm/SOURCES build/rpm/SPECS build/rpm/RPMS
 
           cp "bin/$pkg_name" "build/rpm/SOURCES/$pkg_name"
@@ -137,7 +137,7 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          pkg_name="template-bash-utility"
+          pkg_name="git-clone-remote"
           source_asset="$pkg_name-$VERSION.tar.gz"
           source_hash="$(cat "build/$source_asset.sri")"
 
@@ -150,12 +150,12 @@ jobs:
               name: $name,
               version: $version,
               type: "bash-utility",
-              description: "Bash script utility",
+              description: "Copy branches and tags to another Git remote",
               source_archive: $source,
               source_hash: $source_hash,
               apt_packages: [($name + "_" + $version + "_all.deb")],
               rpm_packages: [($name + "-" + $version + "-1.noarch.rpm")],
-              dependencies: ["coreutils"],
+              dependencies: ["bash", "git", "grep"],
               executables: [$name],
               completions: [("_" + $name)],
               nix_systems: [
@@ -184,7 +184,7 @@ jobs:
           printf ' - %s\n' "${assets[@]}"
 
           gh release create "$GITHUB_REF_NAME" \
-            --title "template-bash-utility $VERSION" \
+            --title "git-clone-remote $VERSION" \
             --generate-notes \
             "${assets[@]}"
 
