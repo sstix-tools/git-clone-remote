@@ -1,2 +1,2 @@
-bin/template-bash-utility usr/bin
-completion/_template-bash-utility usr/share/zsh/site-functions
+bin/git-clone-remote usr/bin
+completion/_git-clone-remote usr/share/zsh/site-functions

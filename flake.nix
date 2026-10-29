@@ -1,5 +1,5 @@
 {
-  description = "template-bash-utility - Template for Bash CLI utilities";
+  description = "git-clone-remote - Copy branches and tags to another Git remote";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
@@ -15,9 +15,9 @@
     in
     {
       packages = forAllSystems (system: pkgs: rec {
-        default = template-bash-utility;
-        template-bash-utility = pkgs.stdenvNoCC.mkDerivation {
-          pname = "template-bash-utility";
+        default = git-clone-remote;
+        git-clone-remote = pkgs.stdenvNoCC.mkDerivation {
+          pname = "git-clone-remote";
           version = "1.0.0";
           src = ./.;
 
@@ -25,17 +25,15 @@
 
           installPhase = ''
             mkdir -p $out/bin $out/share/zsh/site-functions
-            install -D -m 0755 bin/template-bash-utility $out/bin/template-bash-utility
-            wrapProgram $out/bin/template-bash-utility \
-              --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.coreutils pkgs.jq ]}
-            if [ -d completion ]; then
-              cp -r completion/* $out/share/zsh/site-functions/ 2>/dev/null || true
-            fi
+            install -D -m 0755 bin/git-clone-remote $out/bin/git-clone-remote
+            install -D -m 0644 completion/_git-clone-remote $out/share/zsh/site-functions/_git-clone-remote
+            wrapProgram $out/bin/git-clone-remote \
+              --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.bash pkgs.git pkgs.gnugrep ]}
           '';
 
           meta = {
-            description = "Template Bash utility script";
-            mainProgram = "template-bash-utility";
+            description = "Copy branches and tags to another Git remote";
+            mainProgram = "git-clone-remote";
             platforms = pkgs.lib.platforms.unix;
           };
         };
@@ -44,7 +42,7 @@
       apps = forAllSystems (system: pkgs: {
         default = {
           type = "app";
-          program = "${self.packages.${system}.default}/bin/template-bash-utility";
+          program = "${self.packages.${system}.default}/bin/git-clone-remote";
         };
       });
     };

@@ -1,12 +1,12 @@
-Source: template-bash-utility
+Source: git-clone-remote
 Section: utils
 Priority: optional
 Maintainer: sstix-tools <tools@sstix.invalid>
 Standards-Version: 4.6.0
 Rules-Requires-Root: no
 
-Package: template-bash-utility
+Package: git-clone-remote
 Architecture: all
-Depends: coreutils
-Description: Bash script utility template
- A utility script packaged for sstix-tools.
+Depends: bash, git, grep
+Description: Copy branches and tags to another Git remote
+ A Bash utility for mirroring Git branches and tags to another remote.
