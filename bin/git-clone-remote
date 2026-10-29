@@ -12,11 +12,6 @@ usage() {
     echo "       $0 --pull-all"
 }
 
-# Check if URL parameter is provided
-if [[ "${1:-}" == "--shell-integration" ]]; then
-    exit 0
-fi
-
 if [[ "${1:-}" == "--pull-all" ]]; then
     if [[ $# -ne 1 ]]; then
         usage
