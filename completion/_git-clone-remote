@@ -1,0 +1,5 @@
+#compdef git-clone-remote
+
+_arguments \
+  '--pull-all[Fetch all remotes and create local tracking branches]' \
+  '1:new remote URL:'
